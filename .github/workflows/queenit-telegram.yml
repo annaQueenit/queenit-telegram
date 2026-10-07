@@ -30,7 +30,7 @@ jobs:
             if [ -n "$photo" ] && curl -fsS --max-time 60 -o cover.img "$photo"; then
               echo "$item" | jq -r .payload.text > caption.txt
               echo "$item" | jq -c .payload.reply_markup > markup.json
-              res=$(curl -sS --max-time 60 -F "chat_id=$(echo "$item" | jq -r .payload.chat_id)" -F "photo=@cover.img" \
+              res=$(curl -sS --max-time 60 --form-string "chat_id=$(echo "$item" | jq -r .payload.chat_id)" -F "photo=@cover.img" \
                 -F "caption=<caption.txt" -F parse_mode=HTML -F "reply_markup=<markup.json" "$API/sendPhoto" || echo "$FAIL")
               [ "$(echo "$res" | jq -r .ok)" = "true" ] || echo "С обложкой не вышло ($(echo "$res" | jq -r .description)), отправляю текстом"
             fi

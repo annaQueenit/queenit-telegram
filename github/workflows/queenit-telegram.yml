@@ -1,0 +1,35 @@
+# Автопостинг новых материалов queenit.info в Telegram-канал.
+# Раз в 15 минут забирает очередь с сайта, публикует посты ботом и отмечает их отправленными.
+# Заодно запускает на сайте публикацию по расписанию (выпуски выходят вовремя, даже если на сайт никто не зашёл).
+# Секреты репозитория: TG_BOT_TOKEN (токен @anna_agent_inbox_bot), QUEENIT_TG_KEY (ключ из админки сайта → Telegram).
+name: queenit-telegram
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Забрать очередь и опубликовать
+        env:
+          TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          KEY: ${{ secrets.QUEENIT_TG_KEY }}
+        run: |
+          set -euo pipefail
+          Q=$(curl -fsS --max-time 60 "https://queenit.info/api/tg-queue.php?key=${KEY}")
+          echo "$Q" | jq -r '"В очереди: \(.items|length)"'
+          echo "$Q" | jq -c '.items[]' | while read -r item; do
+            id=$(echo "$item" | jq -r .id)
+            res=$(curl -sS --max-time 30 -H 'Content-Type: application/json' -d "$(echo "$item" | jq -c .payload)" "https://api.telegram.org/bot${TOKEN}/sendMessage" || echo '{"ok":false,"description":"нет связи с Telegram"}')
+            if [ "$(echo "$res" | jq -r .ok)" = "true" ]; then
+              body=$(jq -nc --arg id "$id" --argjson m "$(echo "$res" | jq .result.message_id)" '{id:$id,message_id:$m}')
+              echo "Опубликовано: $(echo "$item" | jq -r .title)"
+            else
+              body=$(jq -nc --arg id "$id" --arg e "$(echo "$res" | jq -r .description)" '{id:$id,error:$e}')
+              echo "Ошибка: $(echo "$res" | jq -r .description)"
+            fi
+            curl -fsS --max-time 30 -X POST -H 'Content-Type: application/json' -d "$body" "https://queenit.info/api/tg-queue.php?key=${KEY}" >/dev/null
+            sleep 3
+          done

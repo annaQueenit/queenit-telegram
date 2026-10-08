@@ -7,10 +7,11 @@ name: queenit-telegram
 on:
   schedule:
     - cron: '*/15 * * * *'
-  workflow_dispatch:
-  concurrency:
+    workflow_dispatch:
+concurrency:
   group: queenit-telegram
   cancel-in-progress: false
+jobs:
 jobs:
   post:
     runs-on: ubuntu-latest

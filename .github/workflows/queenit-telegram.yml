@@ -7,7 +7,7 @@ name: queenit-telegram
 on:
   schedule:
     - cron: '*/15 * * * *'
-    workflow_dispatch:
+  workflow_dispatch:
 concurrency:
   group: queenit-telegram
   cancel-in-progress: false

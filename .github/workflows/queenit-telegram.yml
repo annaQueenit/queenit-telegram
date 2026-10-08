@@ -12,7 +12,6 @@ concurrency:
   group: queenit-telegram
   cancel-in-progress: false
 jobs:
-jobs:
   post:
     runs-on: ubuntu-latest
     timeout-minutes: 5
